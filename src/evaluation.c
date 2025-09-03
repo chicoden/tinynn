@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "../include/network.h"
-#include "../include/evaluate.h"
+#include "../include/evaluation.h"
 
 void tinynn_create_evaluation_ctx(struct tinynn_evaluation_ctx_t* evaluation_ctx, const struct tinynn_network_t* network) {
     evaluation_ctx->network = network;

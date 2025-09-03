@@ -3,8 +3,8 @@
 #include <time.h>
 #include "include/network.h"
 #include "include/activation.h"
-#include "include/initialize.h"
-#include "include/evaluate.h"
+#include "include/initializers.h"
+#include "include/evaluation.h"
 
 #define COUNTOF(x) (sizeof(x) / sizeof(x[0]))
 

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "../include/umath.h"
-#include "../include/initialize.h"
+#include "../include/initializers.h"
 
 void tinynn_init_params_random(struct tinynn_network_t* network, uint32_t seed) {
     srand(seed);
