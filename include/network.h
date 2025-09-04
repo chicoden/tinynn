@@ -18,7 +18,6 @@ struct tinynn_network_t {
     struct tinynn_network_layout_t layout;
     uint32_t bias_count;
     uint32_t weight_count;
-    uint32_t max_layer_size;
     float* biases;
     float* weights;
 };

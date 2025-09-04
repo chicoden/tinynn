@@ -1,8 +1,8 @@
 import os
 import subprocess
 
-SET_FG_RED = "\033[31m"
-RESET = "\033[0m"
+CONSOLE_SET_FG_RED = "\033[31m"
+CONSOLE_RESET = "\033[0m"
 
 INCLUDE = "include"
 SOURCE = "src"
@@ -15,7 +15,9 @@ extra_options = [
     "-Wno-unused-function",
     "-march=native",
     "-ffast-math",
-    "-fopt-info-optall-optimized-missed"
+    "-fopt-info-optall-optimized-missed",
+    #"-fsanitize=undefined",
+    #"-fsanitize=address"
 ]
 
 source_files = [
@@ -29,7 +31,7 @@ for file in source_files:
     header_path = os.path.join(INCLUDE, name + ".h")
     src_path = os.path.join(SOURCE, file)
     if not os.path.exists(header_path):
-        print(f"{SET_FG_RED}No header for {src_path}{RESET}")
+        print(f"{CONSOLE_SET_FG_RED}No header for {src_path}{CONSOLE_RESET}")
 
 for file in os.listdir(TARGET):
     os.remove(os.path.join(TARGET, file))
