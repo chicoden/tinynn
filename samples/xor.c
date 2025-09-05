@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-#include "include/network.h"
-#include "include/activation.h"
-#include "include/initializers.h"
-#include "include/evaluation.h"
+#include "../include/network.h"
+#include "../include/activation.h"
+#include "../include/initializers.h"
+#include "../include/evaluation.h"
 
 #define COUNTOF(x) (sizeof(x) / sizeof(x[0]))
 

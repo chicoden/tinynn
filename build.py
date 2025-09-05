@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 CONSOLE_SET_FG_RED = "\033[31m"
 CONSOLE_RESET = "\033[0m"
@@ -44,4 +45,6 @@ for file in source_files:
     subprocess.call(["gcc", src_path, "-o", obj_path, "-c", *extra_options])
     modules.append(obj_path)
 
-subprocess.call(["gcc", "main.c", "-o", "main.exe", *modules, *extra_options])
+for file in sys.argv[1:]:
+    exe_path = file[:file.rfind(".")] + ".exe"
+    subprocess.call(["gcc", file, "-o", exe_path, *modules, *extra_options])
