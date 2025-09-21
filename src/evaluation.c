@@ -29,21 +29,16 @@ void tinynn_evaluate(struct tinynn_evaluation_ctx_t* evaluation_ctx, const float
         const struct tinynn_layer_t* layer = &network->layout.layers[l];
         uint32_t this_layer_size = layer->node_count;
 
-        // Initialize with biases
         for (uint32_t i = 0; i < this_layer_size; i++) {
-            this_layer_preactivation[i] = *(layer_biases++);
-        }
-
-        // Accumulate weighted input from previous layer
-        for (uint32_t i = 0; i < prev_layer_size; i++) {
-            float input = prev_layer_postactivation[i];
-            for (uint32_t j = 0; j < this_layer_size; j++) {
-                this_layer_preactivation[j] += *(layer_weights++) * input;
+            float preactivation_output = *(layer_biases++);
+            for (uint32_t j = 0; j < prev_layer_size; j++) {
+                preactivation_output += *(layer_weights++) * prev_layer_postactivation[j];
             }
+
+            this_layer_preactivation[i] = preactivation_output;
         }
 
-        // Apply activation function
-        layer->activation->eval_elementwise(this_layer_size, this_layer_preactivation, this_layer_postactivation);
+        layer->activation->map(this_layer_size, this_layer_preactivation, this_layer_postactivation);
 
         prev_layer_postactivation = this_layer_postactivation;
         this_layer_preactivation += this_layer_size;
