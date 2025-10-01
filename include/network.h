@@ -22,5 +22,5 @@ struct tinynn_network_t {
     float* weights;
 };
 
-void tinynn_create_network(struct tinynn_network_t* network, const struct tinynn_network_layout_t* layout);
+void tinynn_create_network(struct tinynn_network_t* network, struct tinynn_network_layout_t layout);
 void tinynn_destroy_network(struct tinynn_network_t* network);

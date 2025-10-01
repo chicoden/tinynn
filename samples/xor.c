@@ -18,7 +18,8 @@ int main() {
         {1.0f, 1.0f, 0.0f, 0.0f},
     };
 
-    struct tinynn_network_layout_t layout = {
+    struct tinynn_network_t network;
+    tinynn_create_network(&network, (struct tinynn_network_layout_t){
         .input_node_count = 2,
         .layer_count = 5,
         .layers = (struct tinynn_layer_t[]){
@@ -43,13 +44,11 @@ int main() {
                 .activation = &TINYNN_ACTIVATION_SIGMOID
             }
         }
-    };
-
-    struct tinynn_network_t network;
-    tinynn_create_network(&network, &layout);
-    tinynn_init_params_random_normalized(&network, /*4079*/ time(NULL));
+    });
 
     {
+        tinynn_init_params_random_normalized(&network, /*4079*/ time(NULL));
+
         struct tinynn_evaluation_ctx_t eval_ctx;
         tinynn_create_evaluation_ctx(&eval_ctx, &network);
 
