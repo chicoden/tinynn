@@ -16,9 +16,9 @@ extra_options = [
     "-Wno-unused-function",
     "-march=native",
     "-ffast-math",
-    "-fopt-info-optall-optimized-missed",
-    #"-fsanitize=undefined",
-    #"-fsanitize=address"
+    #"-fopt-info-optall-optimized-missed",
+    "-fsanitize=undefined",###
+    "-fsanitize=address"###
 ]
 
 source_files = [
