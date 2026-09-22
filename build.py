@@ -10,6 +10,8 @@ SOURCE = "src"
 TARGET = "lib"
 
 extra_options = [
+    #"-O0",
+    #"-g",
     "-O3",
     "-Wall",
     "-Wextra",
@@ -17,8 +19,8 @@ extra_options = [
     "-march=native",
     "-ffast-math",
     #"-fopt-info-optall-optimized-missed",
-    "-fsanitize=undefined",###
-    "-fsanitize=address"###
+    #"-fsanitize=undefined",
+    #"-fsanitize=address"
 ]
 
 source_files = [

@@ -1,6 +1,6 @@
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../include/network.h"
@@ -112,15 +112,19 @@ void tinynn_train(
     for (uint32_t epoch = 0; epoch < epochs; epoch++) {
         const float* input = example_inputs;
         const float* target = target_outputs;
+        float total_cost = 0.0f;
         for (uint32_t i = 0; i < example_count; i++) {
             backpropagate(training_ctx, training_params, input, target);
+            if (monitor_accuracy) {
+                total_cost += training_params.cost.eval(output_node_count, output, target);
+            }
 
             for (uint32_t i = 0; i < network->bias_count; i++) {
-                network->biases[i] += training_ctx->bias_gradients[i] * step_factor;
+                network->biases[i] -= training_ctx->bias_gradients[i] * step_factor;
             }
 
             for (uint32_t i = 0; i < network->weight_count; i++) {
-                network->weights[i] += training_ctx->weight_gradients[i] * step_factor;
+                network->weights[i] -= training_ctx->weight_gradients[i] * step_factor;
             }
 
             input += input_node_count;
@@ -129,9 +133,7 @@ void tinynn_train(
 
         printf("Epoch %u of %u complete", epoch + 1, epochs);
         if (monitor_accuracy) {
-            tinynn_evaluate(&training_ctx->evaluation_ctx, input, NULL);
-            float cost = training_params.cost.eval(output_node_count, output, target);
-            printf(", cost = %f", cost);
+            printf(", cost = %f", total_cost);
         }
         fputc('\n', stdout);
     }
