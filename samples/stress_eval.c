@@ -1,14 +1,3 @@
-// Layer sizes: 1024, 256, 64, 64, 32, 10
-// > Average time with column major weights: 23us
-// > Average time with row major weights: 20us
-// ----------------------------------------------------------------
-// Layer sizes: 1024, 256, 256, 256, 64, 10
-// > Average time with column major weights: 21us
-// > Average time with row major weights: 26us
-// ----------------------------------------------------------------
-// Note: must run a few times to make sure no dependence on the seeding
-// Results: idk
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
