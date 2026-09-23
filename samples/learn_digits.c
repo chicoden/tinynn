@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "../include/network.h"
 #include "../include/activation.h"
@@ -8,6 +9,29 @@
 #include "../include/initializers.h"
 #include "../include/training.h"
 #include "../include/evaluation.h"
+
+#define COUNTOF(x) (sizeof(x) / sizeof(x[0]))
+
+enum cli_option_type_t {
+    CLI_OPTION_STRING,
+    CLI_OPTION_FLOAT,
+    CLI_OPTION_UINT32
+};
+
+struct cli_options_t {
+    const char* init_file_path;
+    const char* save_file_path;
+    float learning_rate;
+    uint32_t epochs;
+};
+
+struct cli_option_desc_t {
+    const char* name;
+    enum cli_option_type_t type;
+    void* location;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum idx_data_type_t {
     IDX_UNSIGNED_BYTE = 0x08,
@@ -83,6 +107,55 @@ void idx_destroy_dataset(struct idx_dataset_t* dataset) {
     free(dataset->data);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int parse_cli_options(char** args, size_t option_count, const struct cli_option_desc_t* options_desc) {
+    args++;
+    const char* option;
+    const char* value;
+    while ((option = *(args++)) != NULL) {
+        const struct cli_option_desc_t* matching_option = NULL;
+        for (size_t i = 0; i < option_count; i++) {
+            if (strcmp(option, options_desc[i].name) == 0) {
+                matching_option = &options_desc[i];
+                break;
+            }
+        }
+
+        if (matching_option == NULL) {
+            printf("invalid option %s\n", option);
+            return 0;
+        }
+
+        value = *(args++);
+        if (value == NULL) {
+            printf("missing argument for option %s\n", matching_option->name);
+            return 0;
+        }
+
+        switch (matching_option->type) {
+            case CLI_OPTION_STRING: {
+                *(const char**)matching_option->location = value;
+                break;
+            }
+            case CLI_OPTION_FLOAT: {
+                *(float*)matching_option->location = atof(value);
+                break;
+            }
+            case CLI_OPTION_UINT32: {
+                *(uint32_t*)matching_option->location = atoi(value);
+                break;
+            }
+            default: {
+                printf("unhandled option type\n");
+                return 0;
+            }
+        }
+    }
+
+    return 1;
+}
+
 float measure_accuracy(struct tinynn_evaluation_ctx_t* evaluation_ctx, const struct idx_dataset_t* testing_images, const struct idx_dataset_t* testing_labels) {
     uint32_t pixel_count = evaluation_ctx->network->layout.input_node_count;
     float* test_input = (float*)malloc(pixel_count * sizeof(float));
@@ -130,8 +203,53 @@ int save_neural_network(const struct tinynn_network_t* network, const char* path
     return 1;
 }
 
-int main() {
+int main(int argc, char** argv) {
+    (void)argc;
     int status = 0;
+
+    struct cli_options_t options;
+    options.init_file_path = NULL;
+    options.save_file_path = NULL;
+    options.learning_rate = 0.1f;
+    options.epochs = 100;
+
+    struct cli_option_desc_t options_desc[] = {
+        {
+            .name = "--init",
+            .type = CLI_OPTION_STRING,
+            .location = &options.init_file_path
+        },
+        {
+            .name = "--save",
+            .type = CLI_OPTION_STRING,
+            .location = &options.save_file_path
+        },
+        {
+            .name = "--learning-rate",
+            .type = CLI_OPTION_FLOAT,
+            .location = &options.learning_rate
+        },
+        {
+            .name = "--epochs",
+            .type = CLI_OPTION_UINT32,
+            .location = &options.epochs
+        }
+    };
+
+    if (!parse_cli_options(argv, COUNTOF(options_desc), options_desc)) {
+        status = -1;
+        goto done;
+    }
+    printf(
+        "init file path = %s\n"
+        "save file path = %s\n"
+        "learning rate = %f\n"
+        "epochs = %u\n",
+        options.init_file_path,
+        options.save_file_path,
+        options.learning_rate,
+        options.epochs
+    );
 
     struct idx_dataset_t training_images, training_labels, testing_images, testing_labels;
     if (!idx_read_file("../datasets/mnist_digits/training_images", &training_images)) {
@@ -192,17 +310,22 @@ int main() {
             }
         }
     });
-    //tinynn_init_params_random_normalized(&network, time(NULL));
-    FILE* save_file = fopen("digit_recognition.bin", "rb");
-    if (save_file == NULL) {
-        printf("failed to open nn save file\n");
-        status = -1;
-        goto destroy_network;
+
+    if (options.init_file_path == NULL) {
+        tinynn_init_params_random_normalized(&network, time(NULL));
+    } else {
+        FILE* save_file = fopen(options.init_file_path, "rb");
+        if (save_file == NULL) {
+            printf("failed to open nn save file\n");
+            status = -1;
+            goto destroy_network;
+        }
+
+        fseek(save_file, sizeof(network.layout.input_node_count) + sizeof(network.layout.layer_count) + sizeof(uint32_t) * network.layout.layer_count, SEEK_SET);
+        fread(network.biases, sizeof(float), network.bias_count, save_file);
+        fread(network.weights, sizeof(float), network.weight_count, save_file);
+        fclose(save_file);
     }
-    fseek(save_file, sizeof(network.layout.input_node_count) + sizeof(network.layout.layer_count) + sizeof(uint32_t) * network.layout.layer_count, SEEK_SET);
-    fread(network.biases, sizeof(float), network.bias_count, save_file);
-    fread(network.weights, sizeof(float), network.weight_count, save_file);
-    fclose(save_file);
 
     struct tinynn_training_ctx_t training_ctx;
     tinynn_create_training_ctx(&training_ctx, &network);
@@ -222,9 +345,8 @@ int main() {
 
     struct tinynn_training_params_t training_params;
     training_params.cost = TINYNN_COST_QUADRATIC;
-    training_params.learning_rate = 5.0f;
-
-    //tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, 100, 1);
+    training_params.learning_rate = options.learning_rate;
+    tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, options.epochs, 1);
 
     float max_weight = 0.0f;
     float max_bias = 0.0f;
@@ -239,10 +361,12 @@ int main() {
         if (value > max_bias) max_bias = value;
     }
     printf("maximum weight = %f, maximum bias = %f\n", max_weight, max_bias);
-
     printf("accuracy on training data: %.2f%%\n", measure_accuracy(&training_ctx.evaluation_ctx, &training_images, &training_labels) * 100.0f);
     printf("accuracy on test data: %.2f%%\n", measure_accuracy(&training_ctx.evaluation_ctx, &testing_images, &testing_labels) * 100.0f);
-    //save_neural_network(&network, "digit_recognition.bin");
+
+    if (options.save_file_path != NULL) {
+        save_neural_network(&network, options.save_file_path);
+    }
 
     //free_training_outputs:
         free(training_outputs);

@@ -461,9 +461,15 @@ void show_image(const float* image) {
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
+    (void)argc;
+    const char* arch_file_path = "../digit_classifier.bin";
+    if (argv[1] != NULL) {
+        arch_file_path = argv[1];
+    }
+
     struct tinynn_network_t network;
-    if (!load_neural_network("../digit_classifier.bin", &network)) {
+    if (!load_neural_network(arch_file_path, &network)) {
         printf("failed to load neural network\n");
         return -1;
     }
