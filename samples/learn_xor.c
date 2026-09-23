@@ -58,6 +58,7 @@ int main() {
     tinynn_create_training_ctx(&training_ctx, &network);
     training_params.cost = TINYNN_COST_QUADRATIC;
     training_params.learning_rate = 0.1f;
+    training_params.regularization_factor = 0.0f;
     tinynn_train(&training_ctx, training_params, example_count, example_inputs, example_outputs, 200000, 1);
     tinynn_destroy_training_ctx(&training_ctx);
 

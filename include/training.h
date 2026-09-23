@@ -8,6 +8,7 @@
 struct tinynn_training_params_t {
     struct tinynn_cost_fn_t cost;
     float learning_rate;
+    float regularization_factor;
 };
 
 struct tinynn_training_ctx_t {

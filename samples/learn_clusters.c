@@ -104,7 +104,7 @@ int main() {
     struct tinynn_training_params_t training_params;
     training_params.cost = TINYNN_COST_QUADRATIC;
     training_params.learning_rate = 0.1f;
-
+    training_params.regularization_factor = 0.0f;
     tinynn_train(&training_ctx, training_params, EXAMPLE_COUNT, EXAMPLE_INPUTS, EXAMPLE_OUTPUTS, 1000000, 1);
 
     printf("%f", network.biases[0]);

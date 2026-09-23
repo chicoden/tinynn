@@ -22,6 +22,7 @@ struct cli_options_t {
     const char* init_file_path;
     const char* save_file_path;
     float learning_rate;
+    float regularization_factor;
     uint32_t epochs;
 };
 
@@ -211,6 +212,7 @@ int main(int argc, char** argv) {
     options.init_file_path = NULL;
     options.save_file_path = NULL;
     options.learning_rate = 0.1f;
+    options.regularization_factor = 0.0f;
     options.epochs = 100;
 
     struct cli_option_desc_t options_desc[] = {
@@ -230,6 +232,11 @@ int main(int argc, char** argv) {
             .location = &options.learning_rate
         },
         {
+            .name = "--regularization",
+            .type = CLI_OPTION_FLOAT,
+            .location = &options.regularization_factor
+        },
+        {
             .name = "--epochs",
             .type = CLI_OPTION_UINT32,
             .location = &options.epochs
@@ -240,16 +247,6 @@ int main(int argc, char** argv) {
         status = -1;
         goto done;
     }
-    printf(
-        "init file path = %s\n"
-        "save file path = %s\n"
-        "learning rate = %f\n"
-        "epochs = %u\n",
-        options.init_file_path,
-        options.save_file_path,
-        options.learning_rate,
-        options.epochs
-    );
 
     struct idx_dataset_t training_images, training_labels, testing_images, testing_labels;
     if (!idx_read_file("../datasets/mnist_digits/training_images", &training_images)) {
@@ -346,6 +343,7 @@ int main(int argc, char** argv) {
     struct tinynn_training_params_t training_params;
     training_params.cost = TINYNN_COST_QUADRATIC;
     training_params.learning_rate = options.learning_rate;
+    training_params.regularization_factor = options.regularization_factor;
     tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, options.epochs, 1);
 
     float max_weight = 0.0f;

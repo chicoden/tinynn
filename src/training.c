@@ -107,7 +107,9 @@ void tinynn_train(
     uint32_t output_node_count = network->layout.layers[network->layout.layer_count - 1].node_count;
     uint32_t last_layer_first_node_offset = network->bias_count - output_node_count;
     float* output = training_ctx->evaluation_ctx.postactivation_outputs + last_layer_first_node_offset;
+
     float step_factor = training_params.learning_rate / (float)example_count;
+    float weight_decay = 1.0f - training_params.regularization_factor * step_factor;
 
     for (uint32_t epoch = 0; epoch < epochs; epoch++) {
         const float* input = example_inputs;
@@ -124,7 +126,7 @@ void tinynn_train(
             }
 
             for (uint32_t i = 0; i < network->weight_count; i++) {
-                network->weights[i] -= training_ctx->weight_gradients[i] * step_factor;
+                network->weights[i] = network->weights[i] * weight_decay - training_ctx->weight_gradients[i] * step_factor;
             }
 
             input += input_node_count;
