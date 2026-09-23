@@ -188,8 +188,8 @@ int main() {
             }
         }
     });
-    //tinynn_init_params_random_normalized(&network, time(NULL));
-    FILE* save_file = fopen("digit_recognition.bin", "rb");
+    tinynn_init_params_random_normalized(&network, time(NULL));
+    /*FILE* save_file = fopen("digit_recognition.bin", "rb");
     if (save_file == NULL) {
         printf("failed to open nn save file\n");
         status = -1;
@@ -198,7 +198,7 @@ int main() {
     fseek(save_file, sizeof(network.layout.input_node_count) + sizeof(network.layout.layer_count) + sizeof(uint32_t) * network.layout.layer_count, SEEK_SET);
     fread(network.biases, sizeof(float), network.bias_count, save_file);
     fread(network.weights, sizeof(float), network.weight_count, save_file);
-    fclose(save_file);
+    fclose(save_file);*/
 
     struct tinynn_training_ctx_t training_ctx;
     tinynn_create_training_ctx(&training_ctx, &network);
@@ -220,11 +220,25 @@ int main() {
     training_params.cost = TINYNN_COST_QUADRATIC;
     training_params.learning_rate = 5.0f;
 
-    //tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, 1000, 1);
+    tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, 100, 1);
+
+    float max_weight = 0.0f;
+    float max_bias = 0.0f;
+    for (uint32_t i = 0; i < network.weight_count; i++) {
+        float value = network.weights[i];
+        if (value < 0.0f) value = -value;
+        if (value > max_weight) max_weight = value;
+    }
+    for (uint32_t i = 0; i < network.bias_count; i++) {
+        float value = network.biases[i];
+        if (value < 0.0f) value = -value;
+        if (value > max_bias) max_bias = value;
+    }
+    printf("maximum weight = %f, maximum bias = %f\n", max_weight, max_bias);
 
     printf("accuracy on training data: %.2f%%\n", measure_accuracy(&training_ctx.evaluation_ctx, &training_images, &training_labels) * 100.0f);
     printf("accuracy on test data: %.2f%%\n", measure_accuracy(&training_ctx.evaluation_ctx, &testing_images, &testing_labels) * 100.0f);
-    //save_neural_network(&network, "digit_recognition.bin");
+    save_neural_network(&network, "digit_recognition.bin");
 
     //free_training_outputs:
         free(training_outputs);
@@ -232,7 +246,7 @@ int main() {
         free(training_inputs);
     //destroy_training_ctx:
         tinynn_destroy_training_ctx(&training_ctx);
-    destroy_network:
+    //destroy_network:
         tinynn_destroy_network(&network);
     destroy_testing_labels:
         idx_destroy_dataset(&testing_labels);
