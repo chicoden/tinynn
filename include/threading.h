@@ -12,24 +12,24 @@ typedef SYNCHRONIZATION_BARRIER barrier_t;
 #define thread_get_payload() payload
 #define thread_exit() ExitThread(0)
 
-int create_thread(thread_routine_t routine, void* payload, thread_t* thread) {
+static int create_thread(thread_routine_t routine, void* payload, thread_t* thread) {
     *thread = CreateThread(NULL, 0, routine, payload, 0, NULL);
     return *thread != NULL;
 }
 
-void join_thread(thread_t thread) {
+static void join_thread(thread_t thread) {
     (void)WaitForSingleObject(thread, INFINITE);
     (void)CloseHandle(thread);
 }
 
-int create_barrier(barrier_t* barrier, uint32_t thread_count) {
+static int create_barrier(barrier_t* barrier, uint32_t thread_count) {
     return InitializeSynchronizationBarrier(barrier, thread_count, -1) == TRUE;
 }
 
-void destroy_barrier(barrier_t* barrier) {
+static void destroy_barrier(barrier_t* barrier) {
     (void)DeleteSynchronizationBarrier(barrier);
 }
 
-void enter_barrier(barrier_t* barrier) {
+static void enter_barrier(barrier_t* barrier) {
     (void)EnterSynchronizationBarrier(barrier, 0);
 }
