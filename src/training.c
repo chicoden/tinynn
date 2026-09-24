@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "../include/network.h"
 #include "../include/training.h"
 #include "../include/evaluation.h"
@@ -84,59 +85,100 @@ void tinynn_create_training_ctx(struct tinynn_training_ctx_t* training_ctx, cons
     tinynn_create_evaluation_ctx(&training_ctx->evaluation_ctx, network);
     training_ctx->bias_gradients = (float*)malloc(network->bias_count * sizeof(float));
     training_ctx->weight_gradients = (float*)malloc(network->weight_count * sizeof(float));
+    training_ctx->batch_bias_gradients = (float*)malloc(network->bias_count * sizeof(float));
+    training_ctx->batch_weight_gradients = (float*)malloc(network->weight_count * sizeof(float));
 }
 
 void tinynn_destroy_training_ctx(struct tinynn_training_ctx_t* training_ctx) {
     tinynn_destroy_evaluation_ctx(&training_ctx->evaluation_ctx);
     free(training_ctx->bias_gradients);
     free(training_ctx->weight_gradients);
+    free(training_ctx->batch_bias_gradients);
+    free(training_ctx->batch_weight_gradients);
 }
 
 void tinynn_train(
     struct tinynn_training_ctx_t* training_ctx,
     struct tinynn_training_params_t training_params,
     uint32_t example_count,
-    const float* example_inputs,
-    const float* target_outputs,
-    uint32_t epochs,
-    int monitor_accuracy
+    float* example_inputs,
+    float* target_outputs,
+    uint32_t batch_size,
+    uint32_t epochs
 ) {
     const struct tinynn_network_t* network = training_ctx->evaluation_ctx.network;
-
     uint32_t input_node_count = network->layout.input_node_count;
     uint32_t output_node_count = network->layout.layers[network->layout.layer_count - 1].node_count;
+
     uint32_t last_layer_first_node_offset = network->bias_count - output_node_count;
     float* output = training_ctx->evaluation_ctx.postactivation_outputs + last_layer_first_node_offset;
 
-    float step_factor = training_params.learning_rate / (float)example_count;
+    float step_factor = training_params.learning_rate / (float)batch_size;
     float weight_decay = 1.0f - training_params.regularization_factor * step_factor;
 
+    srand(time(NULL));
     for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-        const float* input = example_inputs;
-        const float* target = target_outputs;
-        float total_cost = 0.0f;
-        for (uint32_t i = 0; i < example_count; i++) {
-            backpropagate(training_ctx, training_params, input, target);
-            if (monitor_accuracy) {
-                total_cost += training_params.cost.eval(output_node_count, output, target);
+        // shuffle training data
+        float* input = example_inputs;
+        float* target = target_outputs;
+        for (uint32_t i = 0; i < example_count - 1; i++) {
+            uint32_t j = rand() % (example_count - i) + i;
+            float* other_input = example_inputs + j * input_node_count;
+            float* other_target = target_outputs + j * output_node_count;
+
+            for (uint32_t k = 0; k < input_node_count; k++) {
+                float temp = input[k];
+                input[k] = other_input[k];
+                other_input[k] = temp;
             }
 
-            for (uint32_t i = 0; i < network->bias_count; i++) {
-                network->biases[i] -= training_ctx->bias_gradients[i] * step_factor;
-            }
-
-            for (uint32_t i = 0; i < network->weight_count; i++) {
-                network->weights[i] = network->weights[i] * weight_decay - training_ctx->weight_gradients[i] * step_factor;
+            for (uint32_t k = 0; k < output_node_count; k++) {
+                float temp = target[k];
+                target[k] = other_target[k];
+                other_target[k] = temp;
             }
 
             input += input_node_count;
             target += output_node_count;
         }
 
-        printf("Epoch %u of %u complete", epoch + 1, epochs);
-        if (monitor_accuracy) {
-            printf(", cost = %f", total_cost);
+        // iterate over batches
+        input = example_inputs;
+        target = target_outputs;
+        float total_cost = 0.0f;
+        for (uint32_t batch_start = 0; batch_start < example_count; batch_start += batch_size) {
+            uint32_t this_batch_size = example_count - batch_start;
+            if (this_batch_size > batch_size) this_batch_size = batch_size;
+
+            // sum gradients for each training pair in batch
+            memset(training_ctx->batch_bias_gradients, 0, network->bias_count * sizeof(float));
+            memset(training_ctx->batch_weight_gradients, 0, network->weight_count * sizeof(float));
+            for (uint32_t pair = 0; pair < this_batch_size; pair++) {
+                backpropagate(training_ctx, training_params, input, target);
+                total_cost += training_params.cost.eval(output_node_count, output, target);
+
+                for (uint32_t i = 0; i < network->bias_count; i++) {
+                    training_ctx->batch_bias_gradients[i] += training_ctx->bias_gradients[i];
+                }
+
+                for (uint32_t i = 0; i < network->weight_count; i++) {
+                    training_ctx->batch_weight_gradients[i] += training_ctx->weight_gradients[i];
+                }
+
+                input += input_node_count;
+                target += output_node_count;
+            }
+
+            // update parameters
+            for (uint32_t i = 0; i < network->bias_count; i++) {
+                network->biases[i] -= training_ctx->batch_bias_gradients[i] * step_factor;
+            }
+
+            for (uint32_t i = 0; i < network->weight_count; i++) {
+                network->weights[i] = network->weights[i] * weight_decay - training_ctx->batch_weight_gradients[i] * step_factor;
+            }
         }
-        fputc('\n', stdout);
+
+        printf("Epoch %u of %u complete, previous cost = %f\n", epoch + 1, epochs, total_cost);
     }
 }

@@ -23,6 +23,7 @@ struct cli_options_t {
     const char* save_file_path;
     float learning_rate;
     float regularization_factor;
+    uint32_t batch_size;
     uint32_t epochs;
 };
 
@@ -213,6 +214,7 @@ int main(int argc, char** argv) {
     options.save_file_path = NULL;
     options.learning_rate = 0.1f;
     options.regularization_factor = 0.0f;
+    options.batch_size = 1;
     options.epochs = 100;
 
     struct cli_option_desc_t options_desc[] = {
@@ -235,6 +237,11 @@ int main(int argc, char** argv) {
             .name = "--regularization",
             .type = CLI_OPTION_FLOAT,
             .location = &options.regularization_factor
+        },
+        {
+            .name = "--batch-size",
+            .type = CLI_OPTION_UINT32,
+            .location = &options.batch_size
         },
         {
             .name = "--epochs",
@@ -344,7 +351,7 @@ int main(int argc, char** argv) {
     training_params.cost = TINYNN_COST_QUADRATIC;
     training_params.learning_rate = options.learning_rate;
     training_params.regularization_factor = options.regularization_factor;
-    tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, options.epochs, 1);
+    tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, options.batch_size, options.epochs);
 
     float max_weight = 0.0f;
     float max_bias = 0.0f;

@@ -7,7 +7,7 @@
 #include "../include/training.h"
 
 const uint32_t EXAMPLE_COUNT = 32;
-static const float EXAMPLE_INPUTS[] = {
+float EXAMPLE_INPUTS[] = {
     0.181259f, 0.600128f,
     0.209161f, 0.686168f,
     0.272544f, 0.760272f,
@@ -41,7 +41,7 @@ static const float EXAMPLE_INPUTS[] = {
     0.592546f, 0.425580f,
     0.415377f, 0.017189f
 };
-static const float EXAMPLE_OUTPUTS[] = {
+float EXAMPLE_OUTPUTS[] = {
     1.0f, 0.0f, 0.0f, 0.0f,
     1.0f, 0.0f, 0.0f, 0.0f,
     1.0f, 0.0f, 0.0f, 0.0f,
@@ -105,7 +105,7 @@ int main() {
     training_params.cost = TINYNN_COST_QUADRATIC;
     training_params.learning_rate = 0.1f;
     training_params.regularization_factor = 0.0f;
-    tinynn_train(&training_ctx, training_params, EXAMPLE_COUNT, EXAMPLE_INPUTS, EXAMPLE_OUTPUTS, 1000000, 1);
+    tinynn_train(&training_ctx, training_params, EXAMPLE_COUNT, EXAMPLE_INPUTS, EXAMPLE_OUTPUTS, 1, 1000000);
 
     printf("%f", network.biases[0]);
     for (uint32_t i = 1; i < network.bias_count; i++) {
