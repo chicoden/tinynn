@@ -187,24 +187,6 @@ float measure_accuracy(struct tinynn_evaluation_ctx_t* evaluation_ctx, const str
     return (float)number_correct / (float)testing_images->dimensions[0];
 }
 
-int save_neural_network(const struct tinynn_network_t* network, const char* path) {
-    FILE* save_file = fopen(path, "wb");
-    if (save_file == NULL) return 0;
-
-    fwrite(&network->layout.input_node_count, sizeof(network->layout.input_node_count), 1, save_file);
-    fwrite(&network->layout.layer_count, sizeof(network->layout.layer_count), 1, save_file);
-    for (uint32_t i = 0; i < network->layout.layer_count; i++) {
-        uint32_t layer_size = network->layout.layers[i].node_count;
-        fwrite(&layer_size, sizeof(layer_size), 1, save_file);
-    }
-
-    fwrite(network->biases, sizeof(float), network->bias_count, save_file);
-    fwrite(network->weights, sizeof(float), network->weight_count, save_file);
-
-    fclose(save_file);
-    return 1;
-}
-
 int main(int argc, char** argv) {
     (void)argc;
     int status = 0;
@@ -296,39 +278,32 @@ int main(int argc, char** argv) {
     }
 
     struct tinynn_network_t network;
-    tinynn_create_network(&network, (struct tinynn_network_layout_t){
-        .input_node_count = training_images.dimensions[1] * training_images.dimensions[2],
-        .layer_count = 3,
-        .layers = (struct tinynn_layer_t[]){
-            {
-                .activation = &TINYNN_ACTIVATION_SIGMOID,
-                .node_count = 64
-            },
-            {
-                .activation = &TINYNN_ACTIVATION_SIGMOID,
-                .node_count = 32
-            },
-            {
-                .activation = &TINYNN_ACTIVATION_SOFTMAX,
-                .node_count = 10
-            }
-        }
-    });
-
     if (options.init_file_path == NULL) {
+        tinynn_create_network(&network, (struct tinynn_network_layout_t){
+            .input_node_count = training_images.dimensions[1] * training_images.dimensions[2],
+            .layer_count = 3,
+            .layers = (struct tinynn_layer_t[]){
+                {
+                    .activation = &TINYNN_ACTIVATION_SIGMOID,
+                    .node_count = 64
+                },
+                {
+                    .activation = &TINYNN_ACTIVATION_SIGMOID,
+                    .node_count = 32
+                },
+                {
+                    .activation = &TINYNN_ACTIVATION_SOFTMAX,
+                    .node_count = 10
+                }
+            }
+        });
         tinynn_init_params_random_normalized(&network, time(NULL));
     } else {
-        FILE* save_file = fopen(options.init_file_path, "rb");
-        if (save_file == NULL) {
-            printf("failed to open nn save file\n");
+        if (!tinynn_load_network(&network, options.init_file_path, 0, NULL)) {
+            printf("failed to load nn\n");
             status = -1;
             goto destroy_network;
         }
-
-        fseek(save_file, sizeof(network.layout.input_node_count) + sizeof(network.layout.layer_count) + sizeof(uint32_t) * network.layout.layer_count, SEEK_SET);
-        fread(network.biases, sizeof(float), network.bias_count, save_file);
-        fread(network.weights, sizeof(float), network.weight_count, save_file);
-        fclose(save_file);
     }
 
     struct tinynn_training_ctx_t training_ctx;
@@ -370,7 +345,10 @@ int main(int argc, char** argv) {
     printf("accuracy on test data: %.2f%%\n", measure_accuracy(&training_ctx.evaluation_ctx, &testing_images, &testing_labels) * 100.0f);
 
     if (options.save_file_path != NULL) {
-        save_neural_network(&network, options.save_file_path);
+        if (!tinynn_save_network(&network, options.save_file_path, 0, NULL)) {
+            printf("failed to save nn\n");
+            status = -1;
+        }
     }
 
     //free_training_outputs:

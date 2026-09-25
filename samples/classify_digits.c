@@ -428,29 +428,6 @@ static const float images[][784] = {
     }
 };
 
-int load_neural_network(const char* path, struct tinynn_network_t* network) {
-    FILE* file = fopen(path, "rb");
-    if (file == NULL) return 0;
-
-    struct tinynn_network_layout_t layout;
-    fread(&layout.input_node_count, sizeof(layout.input_node_count), 1, file);
-    fread(&layout.layer_count, sizeof(layout.layer_count), 1, file);
-    layout.layers = (struct tinynn_layer_t*)malloc(layout.layer_count * sizeof(struct tinynn_layer_t));
-    for (uint32_t i = 0; i < layout.layer_count; i++) {
-        struct tinynn_layer_t* layer = &layout.layers[i];
-        layer->activation = &TINYNN_ACTIVATION_SIGMOID;
-        fread(&layer->node_count, sizeof(layer->node_count), 1, file);
-    }
-    layout.layers[layout.layer_count - 1].activation = &TINYNN_ACTIVATION_SOFTMAX;
-    tinynn_create_network(network, layout);
-
-    fread(network->biases, sizeof(float), network->bias_count, file);
-    fread(network->weights, sizeof(float), network->weight_count, file);
-
-    fclose(file);
-    return 1;
-}
-
 void show_image(const float* image) {
     for (uint32_t i = 0; i < 28; i++) {
         for (uint32_t j = 0; j < 28; j++) {
@@ -470,8 +447,8 @@ int main(int argc, char** argv) {
     }
 
     struct tinynn_network_t network;
-    if (!load_neural_network(arch_file_path, &network)) {
-        printf("failed to load neural network\n");
+    if (!tinynn_load_network(&network, arch_file_path, 0, NULL)) {
+        printf("failed to load nn\n");
         return -1;
     }
 
@@ -498,6 +475,5 @@ int main(int argc, char** argv) {
 
     tinynn_destroy_evaluation_ctx(&evaluation_ctx);
     tinynn_destroy_network(&network);
-    free(network.layout.layers);
     return 0;
 }
