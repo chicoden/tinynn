@@ -28,11 +28,14 @@ static void backpropagate(
     float* next_layer_weight_gradients = training_ctx->weight_gradients + network->weight_count;
 
     // compute bias gradients for last layer
-    training_params.cost.eval_gradient(this_layer_size, this_layer_postactivation, target, this_layer_bias_gradients);
-    this_layer->activation->map_derivative(this_layer_size, this_layer_preactivation, this_layer_preactivation);
-    for (uint32_t i = 0; i < this_layer_size; i++) {
-        this_layer_bias_gradients[i] *= this_layer_preactivation[i];
-    }
+    training_params.cost.eval_gradient(this_layer_size, this_layer_postactivation, target, training_ctx->delta);
+    this_layer->activation->backpropagate(
+        this_layer_size,
+        this_layer_preactivation,
+        this_layer_postactivation,
+        training_ctx->delta,
+        this_layer_bias_gradients
+    );
 
     // iterate backward over remaining layers
     for (uint32_t l = 0; l < network->layout.layer_count - 1; l++) {
@@ -58,18 +61,21 @@ static void backpropagate(
         }
 
         // compute bias gradients for the next layer back
-        memset(this_layer_bias_gradients, 0, this_layer_size * sizeof(float));
+        memset(training_ctx->delta, 0, this_layer_size * sizeof(float));
         float* weights = next_layer_weights;
-        for (uint32_t n = 0; n < next_layer_size; n++) {
-            for (uint32_t i = 0; i < this_layer_size; i++) {
-                this_layer_bias_gradients[i] += *(weights++) * next_layer_bias_gradients[n];
+        for (uint32_t i = 0; i < next_layer_size; i++) {
+            for (uint32_t j = 0; j < this_layer_size; j++) {
+                training_ctx->delta[j] += *(weights++) * next_layer_bias_gradients[i];
             }
         }
 
-        this_layer->activation->map_derivative(this_layer_size, this_layer_preactivation, this_layer_preactivation);
-        for (uint32_t i = 0; i < this_layer_size; i++) {
-            this_layer_bias_gradients[i] *= this_layer_preactivation[i];
-        }
+        this_layer->activation->backpropagate(
+            this_layer_size,
+            this_layer_preactivation,
+            this_layer_postactivation,
+            training_ctx->delta,
+            this_layer_bias_gradients
+        );
     }
 
     // compute weight gradients for first layer
@@ -82,11 +88,18 @@ static void backpropagate(
 }
 
 void tinynn_create_training_ctx(struct tinynn_training_ctx_t* training_ctx, const struct tinynn_network_t* network) {
+    uint32_t max_layer_size = network->layout.input_node_count;
+    for (uint32_t i = 0; i < network->layout.layer_count; i++) {
+        uint32_t layer_size = network->layout.layers[i].node_count;
+        if (layer_size > max_layer_size) max_layer_size = layer_size;
+    }
+
     tinynn_create_evaluation_ctx(&training_ctx->evaluation_ctx, network);
     training_ctx->bias_gradients = (float*)malloc(network->bias_count * sizeof(float));
     training_ctx->weight_gradients = (float*)malloc(network->weight_count * sizeof(float));
     training_ctx->batch_bias_gradients = (float*)malloc(network->bias_count * sizeof(float));
     training_ctx->batch_weight_gradients = (float*)malloc(network->weight_count * sizeof(float));
+    training_ctx->delta = (float*)malloc(max_layer_size * sizeof(float));
 }
 
 void tinynn_destroy_training_ctx(struct tinynn_training_ctx_t* training_ctx) {
@@ -95,6 +108,7 @@ void tinynn_destroy_training_ctx(struct tinynn_training_ctx_t* training_ctx) {
     free(training_ctx->weight_gradients);
     free(training_ctx->batch_bias_gradients);
     free(training_ctx->batch_weight_gradients);
+    free(training_ctx->delta);
 }
 
 void tinynn_train(

@@ -17,6 +17,7 @@ struct tinynn_training_ctx_t {
     float* weight_gradients;
     float* batch_bias_gradients;
     float* batch_weight_gradients;
+    float* delta;
 };
 
 void tinynn_create_training_ctx(struct tinynn_training_ctx_t* training_ctx, const struct tinynn_network_t* network);

@@ -38,7 +38,7 @@ void tinynn_evaluate(struct tinynn_evaluation_ctx_t* evaluation_ctx, const float
             this_layer_preactivation[i] = preactivation_output;
         }
 
-        layer->activation->map(this_layer_size, this_layer_preactivation, this_layer_postactivation);
+        layer->activation->eval(this_layer_size, this_layer_preactivation, this_layer_postactivation);
 
         prev_layer_postactivation = this_layer_postactivation;
         this_layer_preactivation += this_layer_size;
