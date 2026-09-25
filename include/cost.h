@@ -8,3 +8,4 @@ struct tinynn_cost_fn_t {
 };
 
 extern const struct tinynn_cost_fn_t TINYNN_COST_QUADRATIC;
+extern const struct tinynn_cost_fn_t TINYNN_COST_CROSS_ENTROPY;

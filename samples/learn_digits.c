@@ -281,19 +281,15 @@ int main(int argc, char** argv) {
     if (options.init_file_path == NULL) {
         tinynn_create_network(&network, (struct tinynn_network_layout_t){
             .input_node_count = training_images.dimensions[1] * training_images.dimensions[2],
-            .layer_count = 3,
+            .layer_count = 2,
             .layers = (struct tinynn_layer_t[]){
                 {
-                    .activation = &TINYNN_ACTIVATION_SIGMOID,
-                    .node_count = 64
+                    .node_count = 50,
+                    .activation = &TINYNN_ACTIVATION_SIGMOID
                 },
                 {
-                    .activation = &TINYNN_ACTIVATION_SIGMOID,
-                    .node_count = 32
-                },
-                {
-                    .activation = &TINYNN_ACTIVATION_SOFTMAX,
-                    .node_count = 10
+                    .node_count = 10,
+                    .activation = &TINYNN_ACTIVATION_SOFTMAX
                 }
             }
         });
@@ -323,7 +319,7 @@ int main(int argc, char** argv) {
     }
 
     struct tinynn_training_params_t training_params;
-    training_params.cost = TINYNN_COST_QUADRATIC;
+    training_params.cost = TINYNN_COST_CROSS_ENTROPY;
     training_params.learning_rate = options.learning_rate;
     training_params.regularization_factor = options.regularization_factor;
     tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, options.batch_size, options.epochs);
