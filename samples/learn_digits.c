@@ -309,7 +309,7 @@ int main(int argc, char** argv) {
                 .node_count = 32
             },
             {
-                .activation = &TINYNN_ACTIVATION_SIGMOID,
+                .activation = &TINYNN_ACTIVATION_SOFTMAX,
                 .node_count = 10
             }
         }

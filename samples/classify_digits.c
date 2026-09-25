@@ -441,6 +441,7 @@ int load_neural_network(const char* path, struct tinynn_network_t* network) {
         layer->activation = &TINYNN_ACTIVATION_SIGMOID;
         fread(&layer->node_count, sizeof(layer->node_count), 1, file);
     }
+    layout.layers[layout.layer_count - 1].activation = &TINYNN_ACTIVATION_SOFTMAX;
     tinynn_create_network(network, layout);
 
     fread(network->biases, sizeof(float), network->bias_count, file);
