@@ -21,6 +21,7 @@ enum cli_option_type_t {
 struct cli_options_t {
     const char* init_file_path;
     const char* save_file_path;
+    const char* cost;
     float learning_rate;
     float regularization_factor;
     uint32_t batch_size;
@@ -194,6 +195,7 @@ int main(int argc, char** argv) {
     struct cli_options_t options;
     options.init_file_path = NULL;
     options.save_file_path = NULL;
+    options.cost = "quadratic";
     options.learning_rate = 0.1f;
     options.regularization_factor = 0.0f;
     options.batch_size = 1;
@@ -209,6 +211,11 @@ int main(int argc, char** argv) {
             .name = "--save",
             .type = CLI_OPTION_STRING,
             .location = &options.save_file_path
+        },
+        {
+            .name = "--cost",
+            .type = CLI_OPTION_STRING,
+            .location = &options.cost
         },
         {
             .name = "--learning-rate",
@@ -319,7 +326,11 @@ int main(int argc, char** argv) {
     }
 
     struct tinynn_training_params_t training_params;
-    training_params.cost = TINYNN_COST_CROSS_ENTROPY;
+    if (strcmp(options.cost, "cross_entropy") == 0) {
+        training_params.cost = TINYNN_COST_CROSS_ENTROPY;
+    } else {
+        training_params.cost = TINYNN_COST_QUADRATIC;
+    }
     training_params.learning_rate = options.learning_rate;
     training_params.regularization_factor = options.regularization_factor;
     tinynn_train(&training_ctx, training_params, training_images.dimensions[0], training_inputs, training_outputs, options.batch_size, options.epochs);
