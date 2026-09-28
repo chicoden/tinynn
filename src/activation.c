@@ -3,6 +3,8 @@
 #include "../include/umath.h"
 #include "../include/activation.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void eval_sigmoid(uint32_t element_count, const float* x, float* y) {
     for (uint32_t i = 0; i < element_count; i++) {
         y[i] = 1.0f / (1.0f + umath_exp(-x[i]));
@@ -15,6 +17,23 @@ static void backpropagate_sigmoid(uint32_t element_count, const float* x, const 
         grad_in[i] = grad_out[i] * y[i] * (1.0f - y[i]);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void eval_sine(uint32_t element_count, const float* x, float* y) {
+    for (uint32_t i = 0; i < element_count; i++) {
+        y[i] = umath_sin(x[i]);
+    }
+}
+
+static void backpropagate_sine(uint32_t element_count, const float* x, const float* y, const float* grad_out, float* grad_in) {
+    (void)y;
+    for (uint32_t i = 0; i < element_count; i++) {
+        grad_in[i] = grad_out[i] * umath_cos(x[i]);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void eval_softmax(uint32_t element_count, const float* x, float* y) {
     float total = 0.0f;
@@ -38,9 +57,16 @@ static void backpropagate_softmax(uint32_t element_count, const float* x, const 
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const struct tinynn_activation_t TINYNN_ACTIVATION_SIGMOID = {
     .eval = eval_sigmoid,
     .backpropagate = backpropagate_sigmoid
+};
+
+const struct tinynn_activation_t TINYNN_ACTIVATION_SINE = {
+    .eval = eval_sine,
+    .backpropagate = backpropagate_sine
 };
 
 const struct tinynn_activation_t TINYNN_ACTIVATION_SOFTMAX = {

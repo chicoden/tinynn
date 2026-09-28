@@ -8,4 +8,5 @@ struct tinynn_activation_t {
 };
 
 extern const struct tinynn_activation_t TINYNN_ACTIVATION_SIGMOID;
+extern const struct tinynn_activation_t TINYNN_ACTIVATION_SINE;
 extern const struct tinynn_activation_t TINYNN_ACTIVATION_SOFTMAX;
