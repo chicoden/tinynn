@@ -130,12 +130,13 @@ static float umath_ln(float x) {
 }
 
 static float umath_sin(float x) {
+    static const uint32_t N = 5;
     float i = umath_round(x * UMATH_RECIP_PI);
     x -= UMATH_PI * i;
 
     float y = x;
     float xx = x * x;
-    for (uint32_t n = 11; n > 1; n -= 2) {
+    for (uint32_t n = 2 * N + 1; n > 1; n -= 2) {
         y = x - (1.0f/((n-1)*n)) * xx * y;
     }
 
@@ -144,12 +145,13 @@ static float umath_sin(float x) {
 }
 
 static float umath_cos(float x) {
+    static const uint32_t N = 5;
     float i = umath_round(x * UMATH_RECIP_PI);
     x -= UMATH_PI * i;
 
     float y = 1.0f;
     float xx = x * x;
-    for (uint32_t n = 10; n > 0; n -= 2) {
+    for (uint32_t n = 2 * N; n > 0; n -= 2) {
         y = 1.0f - (1.0f/((n-1)*n)) * xx * y;
     }
 
