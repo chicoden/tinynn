@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
         if (!tinynn_load_network(&network, options.init_file_path, 0, NULL)) {
             printf("failed to load nn\n");
             status = -1;
-            goto destroy_network;
+            goto destroy_testing_labels;
         }
     }
 
@@ -364,7 +364,7 @@ int main(int argc, char** argv) {
         free(training_inputs);
     //destroy_training_ctx:
         tinynn_destroy_training_ctx(&training_ctx);
-    destroy_network:
+    //destroy_network:
         tinynn_destroy_network(&network);
     destroy_testing_labels:
         idx_destroy_dataset(&testing_labels);

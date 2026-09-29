@@ -9,7 +9,8 @@
 
 static const struct tinynn_activation_t* TINYNN_ACTIVATION_TABLE[] = {
     &TINYNN_ACTIVATION_SIGMOID,
-    &TINYNN_ACTIVATION_SOFTMAX
+    &TINYNN_ACTIVATION_SOFTMAX,
+    &TINYNN_ACTIVATION_SINE
 };
 
 void tinynn_create_network(struct tinynn_network_t* network, struct tinynn_network_layout_t layout) {
